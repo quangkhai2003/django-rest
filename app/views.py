@@ -17,7 +17,7 @@ def get_product_item(request, id):
     return JsonResponse(data)
 
 def add_product_item(request):
-    new_product = ProductItem(title='guitar', quantity=1 , price=19)
+    new_product = ProductItem(id=1, title='guitar', quantity=1 , price=19)
     new_product.save()
     return HttpResponse("added data")
     
