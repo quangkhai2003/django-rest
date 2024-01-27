@@ -7,4 +7,5 @@ app_name = 'dashboard'
 urlpatterns = [
     path('hello/', views.hello_world, name='hello_world'),
     path('product/<int:id>', views.get_product_item, name='get_product_item'),
+    path('add', views.add_product_item, name='add_product_item'),
 ]

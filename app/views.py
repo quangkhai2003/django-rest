@@ -15,4 +15,9 @@ def get_product_item(request, id):
         'price': str(product.price),  # Convert DecimalField to string
     }
     return JsonResponse(data)
+
+def add_product_item(request, id):
+    new_product = ProductItem(title='guitar', quantity=1 , price=19)
+    new_product.save()
+    return HttpResponse("added data")
     
