@@ -131,4 +131,4 @@ CORS_ALLOWED_ORIGINS = [
     '*'
 ]
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*', 'shop-guitar.onrender.com']
