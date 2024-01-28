@@ -1,7 +1,9 @@
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
-from app.models import ProductItem
+from app.models import ProductItem, CartItem
 from django.shortcuts import get_object_or_404, render
+import json
+from django.views.decorators.csrf import csrf_exempt
 
 # Create your views here.
 def hello_world(request):
@@ -16,8 +18,105 @@ def get_product_item(request, id):
     }
     return JsonResponse(data)
 
+def get_all_products(request):
+    try:
+        # Retrieve all products from the database
+        products = ProductItem.objects.all()
+
+        # Convert products queryset to JSON format
+        product_list = list(products.values())
+
+        return JsonResponse({'success': True, 'products': product_list})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
 def add_product_item(request):
     new_product = ProductItem(id=1, title='guitar', quantity=1 , price=19)
     new_product.save()
     return HttpResponse("added data")
+
+@csrf_exempt    
+def add_products(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            print("here is data: ", data)
+            
+            if not isinstance(data, list):
+                raise ValueError('JSON data must be a list')
+
+            for item in data:
+                title = item.get('title')
+                quantity = item.get('quantity')
+                price = item.get('price')
+
+                # Create a new Product instance
+                product = ProductItem.objects.create(title=title, quantity=quantity, price=price)
+
+            return JsonResponse({'success': True, 'message': 'Products added successfully'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    else:
+        return JsonResponse({'success': False, 'message': 'Only POST requests are allowed'}, status=405)
     
+@csrf_exempt
+def add_to_cart(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            product_id = data.get('product_id')
+            quantity = data.get('quantity', 1)  # Default quantity is 1
+
+            # Check if the product exists
+            product = ProductItem.objects.get(pk=product_id)
+
+            # Add item to cart
+            cart_item, created = CartItem.objects.get_or_create(
+                product=product,
+                defaults={'quantity': quantity}
+            )
+
+            if not created:
+                # If the item already exists in the cart, update the quantity
+                cart_item.quantity += quantity
+                cart_item.save()
+
+            return JsonResponse({'success': True, 'message': 'Item added to cart successfully'})
+        except ProductItem.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Product does not exist'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    else:
+        return JsonResponse({'success': False, 'message': 'Only POST requests are allowed'}, status=405)
+    
+def get_all_cart_items(request):
+    try:
+        # Retrieve all cart items from the database
+        cart_items = CartItem.objects.all()
+
+        # Convert cart items queryset to JSON format
+        cart_items_list = list(cart_items.values())
+
+        return JsonResponse({'success': True, 'cart_items': cart_items_list})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@csrf_exempt
+def checkout(request):
+    if request.method == 'POST':
+        try:
+            # Get the user's cart items
+            cart_items = CartItem.objects.all()  # You might want to filter by user if you have user-specific carts
+
+            # Calculate total quantity and total revenue
+            total_quantity = sum(item.quantity for item in cart_items)
+            total_revenue = sum(item.product.price * item.quantity for item in cart_items)
+
+            # Clear the user's cart after checkout
+            cart_items.delete()
+
+            return JsonResponse({'totalQuantity': total_quantity, 'totalRevenue': total_revenue})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    else:
+        return JsonResponse({'success': False, 'message': 'Only POST requests are allowed'}, status=405)
