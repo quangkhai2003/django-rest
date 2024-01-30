@@ -37,7 +37,7 @@ def get_all_products(request):
         # Convert products queryset to JSON format
         product_list = list(products.values())
 
-        return JsonResponse({'success': True, 'products': product_list})
+        return JsonResponse({'status': True, 'products': product_list})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
@@ -153,4 +153,13 @@ def login(request):
         return Response("missing user", status=status.HTTP_404_NOT_FOUND)
     token, created = Token.objects.get_or_create(user=user)
     serializer = UserSerializer(user)
-    return Response({'success': True,'token': token.key, 'user': serializer.data, 'isAdmin': user.is_superuser})
+    products = ProductItem.objects.all()
+
+        # Convert products queryset to JSON format
+    product_list = list(products.values())
+    return Response({'status': 'success', 'token': token.key, 'config': {
+        'preferences': {
+            'value': product_list
+        }
+    }})
+
